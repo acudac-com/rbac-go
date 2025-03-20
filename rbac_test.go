@@ -35,19 +35,19 @@ func init() {
 }
 
 func Test_HasPermission(t *testing.T) {
-	ctxRoles := Rbac.CtxRoles()
-	ctxRoles.AddAsync(func() ([]string, error) {
+	az := Rbac.Authorizer()
+	az.AddAsync(func() ([]string, error) {
 		time.Sleep(1 * time.Second)
 		return []string{"use.Account.Member"}, nil
 	})
-	if err := ctxRoles.Err(); err != nil {
+	if err := az.Err(); err != nil {
 		t.Fatal(err)
 	}
 
-	if !ctxRoles.HasPermission("get") {
+	if !az.HasPermission("get") {
 		t.Fatal("should have get permission")
 	}
-	if ctxRoles.HasPermission("update") {
+	if az.HasPermission("update") {
 		t.Fatal("should not have update permission")
 	}
 }

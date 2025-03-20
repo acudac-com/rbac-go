@@ -95,8 +95,8 @@ func (r *Rbac) ChainHasRoleId(chain string, roleId string) bool {
 	return true
 }
 
-// A set of roles which are effective in a specific context.
-type CtxRoles struct {
+// An authorizer with a list of roles.
+type Authorizer struct {
 	// The rbac this belongs to.
 	rbac *Rbac
 	// Added roles.
@@ -107,9 +107,9 @@ type CtxRoles struct {
 	errors sync.Map
 }
 
-// Returns a set to which roles that are effective in a specific context, can be added.
-func (r *Rbac) CtxRoles(roles ...string) *CtxRoles {
-	er := &CtxRoles{
+// Returns an authorizer to add roles to.
+func (r *Rbac) Authorizer(roles ...string) *Authorizer {
+	er := &Authorizer{
 		rbac:   r,
 		roles:  sync.Map{},
 		wg:     sync.WaitGroup{},
@@ -119,15 +119,15 @@ func (r *Rbac) CtxRoles(roles ...string) *CtxRoles {
 	return er
 }
 
-// Directly adds one/more effective roles.
-func (a *CtxRoles) Add(roles ...string) {
+// Directly adds one/more roles.
+func (a *Authorizer) Add(roles ...string) {
 	for _, role := range roles {
 		a.roles.Store(role, true)
 	}
 }
 
-// Asynchronously adds one/more effective roles.
-func (a *CtxRoles) AddAsync(f func() ([]string, error)) {
+// Asynchronously adds one/more roles.
+func (a *Authorizer) AddAsync(f func() ([]string, error)) {
 	a.wg.Add(1)
 	go func() {
 		defer a.wg.Done()
@@ -145,7 +145,7 @@ func (a *CtxRoles) AddAsync(f func() ([]string, error)) {
 }
 
 // Returns a combined error of all sync and async errors that occurred if any.
-func (a *CtxRoles) Err() error {
+func (a *Authorizer) Err() error {
 	a.wg.Wait()
 	errors := []string{}
 	a.errors.Range(func(key, value interface{}) bool {
@@ -159,7 +159,7 @@ func (a *CtxRoles) Err() error {
 }
 
 // Returns whether one of the roles give the specified permission.
-func (a *CtxRoles) HasPermission(permission string) bool {
+func (a *Authorizer) HasPermission(permission string) bool {
 	a.wg.Wait()
 	rolesThatGiveAccess := a.rbac.permissionToRoleSet[permission]
 	for role := range rolesThatGiveAccess {
@@ -171,7 +171,7 @@ func (a *CtxRoles) HasPermission(permission string) bool {
 }
 
 // Returns whether one of the roles are the given role.
-func (a *CtxRoles) HasRole(role string) bool {
+func (a *Authorizer) HasRole(role string) bool {
 	a.wg.Wait()
 	_, ok := a.roles.Load(role)
 	return ok
