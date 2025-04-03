@@ -69,9 +69,6 @@ func NewRbac(roleChains ...*RoleChain) (*Rbac, error) {
 				if _, ok := permissionToRoleSet[permission]; !ok {
 					permissionToRoleSet[permission] = map[string]bool{}
 				}
-				if _, ok := permissionToRoleSet[permission][roleName]; ok {
-					return nil, fmt.Errorf("duplicate permission %s in role %s", permission, roleName)
-				}
 				permissionToRoleSet[permission][roleName] = true
 				roleToPermissionSet[roleName][permission] = true
 			}
